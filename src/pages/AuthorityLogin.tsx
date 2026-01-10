@@ -1,28 +1,44 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Header } from '@/components/Header';
-import { WardSelector } from '@/components/WardSelector';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Shield, Mail, Phone, ArrowLeft, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Header } from "@/components/Header";
+import { WardSelector } from "@/components/WardSelector";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Shield, Mail, Phone, ArrowLeft, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthorityLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [ward, setWard] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [ward, setWard] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // 🔐 Email login
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email || !password || !ward) {
       toast({
         title: "Missing fields",
@@ -34,12 +50,14 @@ export default function AuthorityLogin() {
 
     setIsLoading(true);
     try {
-      await login(email, password, 'authority');
+      await login(email, password, "authority",ward);
+
       toast({
         title: "Welcome, Officer!",
         description: "You've successfully logged in as an authority",
       });
-      navigate('/authority/dashboard');
+
+      navigate("/authority/dashboard");
     } catch (error) {
       toast({
         title: "Login failed",
@@ -51,8 +69,10 @@ export default function AuthorityLogin() {
     }
   };
 
+  // 📱 Phone login (future)
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!phone || !ward) {
       toast({
         title: "Missing fields",
@@ -71,12 +91,12 @@ export default function AuthorityLogin() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container px-4 py-8 md:py-12">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="mb-6 gap-2"
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to role selection
@@ -93,6 +113,7 @@ export default function AuthorityLogin() {
                 Sign in to manage and resolve civic issues in your ward
               </CardDescription>
             </CardHeader>
+
             <CardContent>
               <Tabs defaultValue="email" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -106,35 +127,37 @@ export default function AuthorityLogin() {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* EMAIL LOGIN */}
                 <TabsContent value="email">
                   <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="ward">Assigned Ward</Label>
+                      <Label>Assigned Ward</Label>
                       <WardSelector value={ward} onChange={setWard} />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="email">Official Email</Label>
+                      <Label>Email</Label>
                       <Input
-                        id="email"
                         type="email"
                         placeholder="officer@municipality.gov"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label>Password</Label>
                       <Input
-                        id="password"
                         type="password"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" 
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -143,41 +166,40 @@ export default function AuthorityLogin() {
                           Signing in...
                         </>
                       ) : (
-                        'Sign In as Authority'
+                        "Sign In as Authority"
                       )}
                     </Button>
                   </form>
                 </TabsContent>
 
+                {/* PHONE LOGIN */}
                 <TabsContent value="phone">
                   <form onSubmit={handlePhoneLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="ward-phone">Assigned Ward</Label>
+                      <Label>Assigned Ward</Label>
                       <WardSelector value={ward} onChange={setWard} />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Official Phone Number</Label>
+                      <Label>Phone Number</Label>
                       <Input
-                        id="phone"
                         type="tel"
                         placeholder="+91 98765 43210"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                       />
                     </div>
+
                     <Button type="submit" className="w-full" variant="outline">
                       Send OTP
                     </Button>
+
                     <p className="text-xs text-center text-muted-foreground">
                       OTP verification is a future feature
                     </p>
                   </form>
                 </TabsContent>
               </Tabs>
-
-              <div className="mt-6 pt-6 border-t text-center text-sm text-muted-foreground">
-                
-              </div>
             </CardContent>
           </Card>
         </div>

@@ -1,3 +1,8 @@
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
+
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +23,8 @@ export default function CitizenLogin() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLogin, setIsLogin] = useState(true);
+
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,13 +45,10 @@ export default function CitizenLogin() {
         description: "You've successfully logged in as a citizen",
       });
       navigate('/citizen/dashboard');
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again",
-        variant: "destructive",
-      });
-    } finally {
+    } catch (error: any) {
+  console.error(error);
+}
+ finally {
       setIsLoading(false);
     }
   };
@@ -86,10 +90,16 @@ export default function CitizenLogin() {
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mx-auto mb-4">
                 <Mail className="h-6 w-6" />
               </div>
-              <CardTitle className="text-2xl">Citizen Login</CardTitle>
+              <CardTitle>
+                   {isLogin ? "Citizen Login" : "Citizen Sign Up"}
+              </CardTitle>
+
               <CardDescription>
-                Sign in to report and track civic issues in your area
+                    {isLogin
+                        ? "Sign in to report and track civic issues in your area"
+                        : "Create an account to report civic issues"}
               </CardDescription>
+
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="email" className="w-full">
@@ -127,15 +137,16 @@ export default function CitizenLogin() {
                       />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Signing in...
-                        </>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </Button>
+  {isLoading ? (
+    <>
+      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+      {isLogin ? "Signing in..." : "Creating account..."}
+    </>
+  ) : (
+    isLogin ? "Sign In" : "Sign Up"
+  )}
+</Button>
+
                   </form>
                 </TabsContent>
 
@@ -151,15 +162,26 @@ export default function CitizenLogin() {
                         onChange={(e) => setPhone(e.target.value)}
                       />
                     </div>
-                    <Button type="submit" className="w-full" variant="outline">
-                      Send OTP
-                    </Button>
+                  <Button type="submit" className="w-full">
+                      {isLogin ? "Sign In" : "Sign Up"}
+                  </Button>
+
                     <p className="text-xs text-center text-muted-foreground">
                       OTP verification is a future feature
                     </p>
                   </form>
                 </TabsContent>
               </Tabs>
+
+               <p
+  className="mt-4 text-sm text-center text-blue-600 cursor-pointer"
+  onClick={() => setIsLogin(!isLogin)}
+>
+  {isLogin
+    ? "New user? Create an account"
+    : "Already have an account? Sign in"}
+</p>
+
 
               <div className="mt-6 pt-6 border-t text-center text-sm text-muted-foreground">
              
