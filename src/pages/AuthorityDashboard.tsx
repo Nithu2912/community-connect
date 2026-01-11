@@ -1,14 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { db } from '@/firebase';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -16,27 +10,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dialog'; // Fixed path
 import { Header } from '@/components/Header';
 import { StatusBadge } from '@/components/StatusBadge';
 import { WardSelector } from '@/components/WardSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { mockIssues, mockWards } from '@/data/mockData';
-import { Issue, IssueStatus } from '@/types';
 import { 
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  TrendingUp,
-  MapPin,
-  Camera,
-  AlertTriangle,
-  BarChart3,
-  ThumbsUp,
-  Calendar
+  AlertCircle, 
+  Clock, 
+  CheckCircle2, 
+  TrendingUp, 
+  MapPin, 
+  Calendar, 
+  Loader2,
+  BarChart3 // Added for Polls
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -45,235 +33,113 @@ export default function AuthorityDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedWard, setSelectedWard] = useState('ward-1');
-  const [issues, setIssues] = useState(mockIssues);
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<IssueStatus>('in-progress');
-  const [resolutionProof, setResolutionProof] = useState<File | null>(null);
-
-  const wardData = mockWards.find(w => w.id === selectedWard);
   
-  const filteredIssues = issues.filter(issue => 
-    issue.ward.toLowerCase().includes(selectedWard.replace('ward-', 'ward '))
-  );
+  const [issues, setIssues] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedWard, setSelectedWard] = useState('all');
+  const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
 
-  const overdueIssues = filteredIssues.filter(i => i.isOverdue);
-
-  const handleUpdateStatus = (issue: Issue) => {
-    setSelectedIssue(issue);
-    setNewStatus(issue.status === 'reported' ? 'in-progress' : 'resolved');
-    setIsUpdateDialogOpen(true);
-  };
-
-  const confirmStatusUpdate = () => {
-    if (!selectedIssue) return;
-
-    setIssues(prev => prev.map(issue => 
-      issue.id === selectedIssue.id
-        ? { 
-            ...issue, 
-            status: newStatus, 
-            updatedAt: new Date(),
-            resolvedAt: newStatus === 'resolved' ? new Date() : undefined,
-            isOverdue: false
-          }
-        : issue
-    ));
-
-    toast({
-      title: "Status updated!",
-      description: `Issue marked as ${newStatus.replace('-', ' ')}`,
+  // REAL-TIME CONNECTION
+  useEffect(() => {
+    const q = query(collection(db, "issues"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const issuesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setIssues(issuesData);
+      setIsLoading(false);
     });
+    return () => unsubscribe();
+  }, []);
 
-    setIsUpdateDialogOpen(false);
-    setSelectedIssue(null);
-    setResolutionProof(null);
+  // FILTER LOGIC
+  const filteredIssues = selectedWard === 'all' 
+    ? issues 
+    : issues.filter(i => i.ward === selectedWard);
+
+  const stats = {
+    total: filteredIssues.length,
+    pending: filteredIssues.filter(i => i.status === 'reported').length,
+    resolved: filteredIssues.filter(i => i.status === 'resolved').length,
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  // AI Summary Logic
+  const resolutionRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
 
-  const resolutionRate = wardData 
-    ? Math.round((wardData.resolvedIssues / wardData.totalIssues) * 100) 
-    : 0;
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!selectedIssue) return;
+    try {
+      const issueRef = doc(db, "issues", selectedIssue.id);
+      await updateDoc(issueRef, { 
+        status: newStatus,
+        updatedAt: new Date() 
+      });
+      toast({ title: `Status updated to ${newStatus}` });
+      setIsUpdateDialogOpen(false);
+    } catch (error) {
+      toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        userRole="authority" 
-        userName={user?.displayName || 'Officer'} 
-        onLogout={handleLogout}
-      />
+    <div className="min-h-screen bg-slate-50">
+      <Header userRole="authority" userName={user?.email} onLogout={() => { logout(); navigate('/'); }} />
       
-      <div className="container px-4 py-6 md:py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="container px-4 py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Authority Dashboard</h1>
-            <p className="text-muted-foreground">Manage and resolve civic issues in your ward</p>
+            <h1 className="text-3xl font-bold italic text-slate-800">Authority Panel</h1>
+            <p className="text-muted-foreground">Monitor and resolve ward-level complaints</p>
           </div>
-          <WardSelector 
-            value={selectedWard} 
-            onChange={setSelectedWard}
-            className="w-full md:w-64"
-          />
+          {/* FIXED: Changed onValueChange to onChange to fix the red underline error */}
+          <WardSelector value={selectedWard} onChange={setSelectedWard} />
         </div>
 
-        {/* Ward Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{wardData?.totalIssues || 0}</p>
-                  <p className="text-xs text-muted-foreground">Total Issues</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-warning/10">
-                  <Clock className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{wardData?.pendingIssues || 0}</p>
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-success/10">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{wardData?.resolvedIssues || 0}</p>
-                  <p className="text-xs text-muted-foreground">Resolved</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-accent/10">
-                  <BarChart3 className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{resolutionRate}%</p>
-                  <p className="text-xs text-muted-foreground">Resolution Rate</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* STATS OVERVIEW */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="bg-white border-none shadow-sm"><CardContent className="pt-4 flex items-center gap-4">
+            <TrendingUp className="text-blue-600" /> <div><p className="text-2xl font-bold">{stats.total}</p><p className="text-xs text-muted-foreground uppercase">Total Assigned</p></div>
+          </CardContent></Card>
+          <Card className="bg-white border-none shadow-sm"><CardContent className="pt-4 flex items-center gap-4">
+            <Clock className="text-amber-600" /> <div><p className="text-2xl font-bold">{stats.pending}</p><p className="text-xs text-muted-foreground uppercase">Pending Action</p></div>
+          </CardContent></Card>
+          <Card className="bg-white border-none shadow-sm"><CardContent className="pt-4 flex items-center gap-4">
+            <CheckCircle2 className="text-emerald-600" /> <div><p className="text-2xl font-bold">{stats.resolved}</p><p className="text-xs text-muted-foreground uppercase">Resolved</p></div>
+          </CardContent></Card>
         </div>
 
-        {/* Overdue Alert */}
-        {overdueIssues.length > 0 && (
-          <Card className="mb-6 border-destructive/50 bg-destructive/5">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                <div>
-                  <p className="font-semibold text-destructive">
-                    {overdueIssues.length} Overdue {overdueIssues.length === 1 ? 'Issue' : 'Issues'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    These issues require immediate attention
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Issues List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Ward Issues
-            </CardTitle>
-            <CardDescription>
-              {filteredIssues.length} issues in {wardData?.name || 'selected ward'}
-            </CardDescription>
+        {/* ISSUES LIST */}
+        <Card className="border-none shadow-sm mb-8">
+          <CardHeader className="border-b bg-white rounded-t-lg">
+            <CardTitle className="text-lg flex items-center gap-2"><AlertCircle className="h-5 w-5" /> Ward Issues</CardTitle>
           </CardHeader>
-          <CardContent>
-            {filteredIssues.length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle2 className="h-12 w-12 text-success mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">All Clear!</h3>
-                <p className="text-muted-foreground">No issues reported in this ward</p>
-              </div>
+          <CardContent className="p-0 bg-white">
+            {isLoading ? (
+              <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>
+            ) : filteredIssues.length === 0 ? (
+              <div className="py-20 text-center text-muted-foreground">No issues reported for this ward.</div>
             ) : (
-              <div className="space-y-4">
+              <div className="divide-y">
                 {filteredIssues.map((issue) => (
-                  <div 
-                    key={issue.id} 
-                    className={`flex flex-col md:flex-row gap-4 p-4 rounded-lg border ${
-                      issue.isOverdue ? 'border-destructive/50 bg-destructive/5' : ''
-                    }`}
-                  >
-                    {issue.photoUrl && (
-                      <img 
-                        src={issue.photoUrl} 
-                        alt={issue.title}
-                        className="w-full md:w-32 h-24 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <h4 className="font-semibold line-clamp-1">{issue.title}</h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="truncate">{issue.location.address || 'Location available'}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {issue.isOverdue && (
-                            <Badge variant="destructive" className="gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Overdue
-                            </Badge>
-                          )}
-                          <StatusBadge status={issue.status} />
-                        </div>
+                  <div key={issue.id} className="p-4 flex flex-col md:flex-row gap-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-bold text-slate-700">{issue.title}</h4>
+                        <StatusBadge status={issue.status} />
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {issue.description}
-                      </p>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <ThumbsUp className="h-3.5 w-3.5" />
-                            {issue.upvotes} upvotes
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {formatDistanceToNow(new Date(issue.reportedAt), { addSuffix: true })}
-                          </div>
-                        </div>
-                        {issue.status !== 'resolved' && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleUpdateStatus(issue)}
-                            className={issue.status === 'reported' ? 'bg-warning hover:bg-warning/90' : 'bg-success hover:bg-success/90'}
-                          >
-                            {issue.status === 'reported' ? 'Start Progress' : 'Mark Resolved'}
-                          </Button>
-                        )}
+                      <p className="text-sm text-slate-500 line-clamp-2 mb-4">{issue.description}</p>
+                      <div className="flex flex-wrap gap-4 text-[11px] font-bold text-slate-400 uppercase">
+                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {issue.ward}</span>
+                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {issue.createdAt?.toDate ? formatDistanceToNow(issue.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</span>
                       </div>
+                    </div>
+                    <div className="flex items-center">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => { setSelectedIssue(issue); setIsUpdateDialogOpen(true); }}
+                      >
+                        Update Status
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -282,9 +148,9 @@ export default function AuthorityDashboard() {
           </CardContent>
         </Card>
 
-        {/* Community Features Placeholder */}
-        <div className="grid md:grid-cols-2 gap-4 mt-6">
-          <Card>
+        {/* ADDED COMMUNITY FEATURES SECTION */}
+        <div className="grid md:grid-cols-2 gap-4 mt-12">
+          <Card className="bg-white border-none shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">Monthly Polls</CardTitle>
               <CardDescription>Community feedback collection</CardDescription>
@@ -292,21 +158,22 @@ export default function AuthorityDashboard() {
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
                 <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Monthly polls feature coming soon</p>
+                <p className="text-sm font-medium">Monthly polls feature coming soon</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="bg-white border-none shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">AI Ward Summary</CardTitle>
               <CardDescription>AI-powered insights for your ward</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="text-sm">
-                  <span className="font-medium">Summary: </span>
-                  {wardData?.name || 'This ward'} has a {resolutionRate}% resolution rate. 
-                  {wardData?.pendingIssues ? ` Focus on the ${wardData.pendingIssues} pending issues, especially road damage and drainage concerns.` : ' Great work keeping the area clean!'}
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
+                <p className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-800">Summary: </span>
+                  This ward has a {resolutionRate}% resolution rate. 
+                  {resolutionRate === 0 ? " Great work keeping the area clean!" : " Monitor pending issues to improve efficiency."}
                 </p>
               </div>
             </CardContent>
@@ -314,57 +181,19 @@ export default function AuthorityDashboard() {
         </div>
       </div>
 
-      {/* Status Update Dialog */}
+      {/* UPDATE DIALOG */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Issue Status</DialogTitle>
-            <DialogDescription>
-              {selectedIssue?.title}
-            </DialogDescription>
+            <DialogTitle>Resolve Issue</DialogTitle>
+            <DialogDescription>Update the progress of: {selectedIssue?.title}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>New Status</Label>
-              <Select value={newStatus} onValueChange={(v) => setNewStatus(v as IssueStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {newStatus === 'resolved' && (
-              <div className="space-y-2">
-                <Label>Resolution Proof (Optional)</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <label className="cursor-pointer block">
-                    <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Upload proof image</span>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => setResolutionProof(e.target.files?.[0] || null)}
-                    />
-                  </label>
-                  {resolutionProof && (
-                    <p className="text-sm text-success mt-2">{resolutionProof.name}</p>
-                  )}
-                </div>
-              </div>
-            )}
+          <div className="grid grid-cols-1 gap-3 py-4">
+            <Button className="bg-amber-500 hover:bg-amber-600" onClick={() => handleUpdateStatus('in-progress')}>Set to In-Progress</Button>
+            <Button className="bg-emerald-500 hover:bg-emerald-600" onClick={() => handleUpdateStatus('resolved')}>Mark as Resolved</Button>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUpdateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmStatusUpdate}>
-              Update Status
-            </Button>
+            <Button variant="ghost" onClick={() => setIsUpdateDialogOpen(false)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
