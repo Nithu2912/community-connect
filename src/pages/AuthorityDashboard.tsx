@@ -165,7 +165,13 @@ export default function AuthorityDashboard() {
 
           <Card className="bg-white border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">AI Ward Summary</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+  ✨ AI Ward Summary
+  <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+    Gemini
+  </span>
+</CardTitle>
+
               <CardDescription>AI-powered insights for your ward</CardDescription>
             </CardHeader>
             <CardContent>
