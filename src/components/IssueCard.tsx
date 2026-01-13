@@ -5,7 +5,6 @@ import {
   MapPin, 
   ThumbsUp, 
   Clock, 
-  AlertTriangle,
   Lightbulb,
   Trash2,
   Droplets,
@@ -15,7 +14,6 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-// Minimal mapping to prevent crashes if category is missing
 const categoryIcons: any = {
   'road-damage': Wrench,
   'street-light': Lightbulb,
@@ -43,10 +41,8 @@ export function IssueCard({
   hasUpvoted = false,
   showActions = true 
 }: any) {
-  // 1. SAFEGUARD: Get the icon or default to HelpCircle
   const CategoryIcon = categoryIcons[issue.category] || HelpCircle;
 
-  // 2. SAFEGUARD: Handle Firebase Timestamp vs Standard Date
   let displayDate = "Recently";
   try {
     const dateObj = issue.createdAt?.toDate ? issue.createdAt.toDate() : new Date(issue.reportedAt || Date.now());
@@ -107,13 +103,21 @@ export function IssueCard({
       {showActions && (
         <CardFooter className="pt-0 gap-2">
           <Button
+            // Highlight button if user has already upvoted
             variant={hasUpvoted ? "default" : "outline"}
             size="sm"
-            className="gap-1.5 flex-1 h-8 text-xs"
-            onClick={() => onUpvote?.(issue.id)}
+            className={`gap-1.5 flex-1 h-8 text-xs transition-all ${
+              hasUpvoted 
+                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" 
+                : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpvote?.();
+            }}
           >
             <ThumbsUp className={`h-3.5 w-3.5 ${hasUpvoted ? 'fill-current' : ''}`} />
-            <span>{issue.upvotes || 0}</span>
+            <span>{issue.likes || 0}</span>
           </Button>
           <Button
             variant="secondary"
