@@ -22,6 +22,11 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Phone, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Import Firebase directly for the 'Auto-Create' logic
+import { auth, db } from "@/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+
 export default function AuthorityLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,11 +34,9 @@ export default function AuthorityLogin() {
   const [ward, setWard] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // 🔐 Email login
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -48,18 +51,41 @@ export default function AuthorityLogin() {
 
     setIsLoading(true);
     try {
-      await login(email, password, "authority",ward);
+      let userCredential;
+
+      try {
+        // 1. First, try to log in normally
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (loginError: any) {
+        // 2. If user doesn't exist, create them automatically
+        if (loginError.code === 'auth/user-not-found' || loginError.code === 'auth/invalid-credential') {
+          userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          throw loginError; // Rethrow if it's a different error (like wrong password)
+        }
+      }
+
+      const user = userCredential.user;
+
+      // 3. Save/Update the officer's profile with the selected Ward
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        role: "authority",
+        ward: ward,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       toast({
-        title: "Welcome, Officer!",
-        description: "You've successfully logged in as an authority",
+        title: "Access Granted",
+        description: `Logged in as Authority for ${ward}`,
       });
 
       navigate("/authority/dashboard");
-    } catch (error) {
+    } catch (error: any) {
+      console.error(error);
       toast({
         title: "Login failed",
-        description: "Please check your credentials and try again",
+        description: error.message || "Please check your credentials",
         variant: "destructive",
       });
     } finally {
@@ -67,22 +93,11 @@ export default function AuthorityLogin() {
     }
   };
 
-  // 📱 Phone login (future)
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!phone || !ward) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
     toast({
       title: "OTP Feature",
-      description: "OTP verification will be implemented in the next phase",
+      description: "Coming soon!",
     });
   };
 
@@ -108,7 +123,7 @@ export default function AuthorityLogin() {
               </div>
               <CardTitle className="text-2xl">Authority Login</CardTitle>
               <CardDescription>
-                Sign in to manage and resolve civic issues in your ward
+                Enter credentials to access your assigned ward
               </CardDescription>
             </CardHeader>
 
@@ -116,16 +131,13 @@ export default function AuthorityLogin() {
               <Tabs defaultValue="email" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="email" className="gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email
+                    <Mail className="h-4 w-4" /> Email
                   </TabsTrigger>
                   <TabsTrigger value="phone" className="gap-2">
-                    <Phone className="h-4 w-4" />
-                    Phone
+                    <Phone className="h-4 w-4" /> Phone
                   </TabsTrigger>
                 </TabsList>
 
-                {/* EMAIL LOGIN */}
                 <TabsContent value="email">
                   <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="space-y-2">
@@ -140,6 +152,7 @@ export default function AuthorityLogin() {
                         placeholder="officer@municipality.gov"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        required
                       />
                     </div>
 
@@ -150,52 +163,33 @@ export default function AuthorityLogin() {
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        required
                       />
                     </div>
 
                     <Button
                       type="submit"
-                      className="w-full bg-accent text-accent-foreground"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                       disabled={isLoading}
                     >
                       {isLoading ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Signing in...
+                          Authenticating...
                         </>
                       ) : (
-                        "Sign In as Authority"
+                        "Login / Create Session"
                       )}
                     </Button>
                   </form>
                 </TabsContent>
 
-                {/* PHONE LOGIN */}
                 <TabsContent value="phone">
-                  <form onSubmit={handlePhoneLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Assigned Ward</Label>
-                      <WardSelector value={ward} onChange={setWard} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Phone Number</Label>
-                      <Input
-                        type="tel"
-                        placeholder="+91 98765 43210"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                      />
-                    </div>
-
-                    <Button type="submit" className="w-full" variant="outline">
-                      Send OTP
-                    </Button>
-
-                    <p className="text-xs text-center text-muted-foreground">
-                      OTP verification is a future feature
-                    </p>
-                  </form>
+                  <div className="space-y-4">
+                    <WardSelector value={ward} onChange={setWard} />
+                    <Input placeholder="Phone Number" />
+                    <Button onClick={handlePhoneLogin} className="w-full" variant="outline">Send OTP</Button>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>

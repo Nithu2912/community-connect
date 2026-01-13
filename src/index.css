@@ -4,138 +4,219 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+/* ================================
+   COLOR THEME
+================================ */
+:root {
+  --background: 207 75% 92%;        /* #BDE8F5 */
+  --foreground: 220 45% 20%;       /* #0F2854 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+  --card: 207 75% 92%;
+  --card-foreground: 220 45% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+  --popover: 207 75% 92%;
+  --popover-foreground: 220 45% 20%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+  --primary: 216 67% 33%;          /* #1C4D8D */
+  --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+  /* removed #4988C4 */
+  --secondary: 216 67% 33%;        /* same as primary */
+  --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+  --accent: 216 67% 33%;           /* same as primary */
+  --accent-foreground: 210 40% 98%;
 
-    --accent: 172 66% 50%;
-    --accent-foreground: 222 47% 11%;
+  --muted: 207 60% 85%;
+  --muted-foreground: 216 67% 33%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 100%;
-
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 240 6% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
-  }
-
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 172 66% 50%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 142 71% 35%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 40%;
-    --warning-foreground: 0 0% 100%;
-
-    --info: 199 89% 38%;
-    --info-foreground: 0 0% 100%;
-
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 213 27% 84%;
-
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 224 76% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 240 5% 96%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 217 91% 60%;
-  }
+  --border: 216 67% 45%;
+  --input: 216 67% 45%;
+  --ring: 216 67% 33%;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
+/* Base styles */
+* {
+  @apply border-border;
 }
 
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+/* ================================
+   UTILITIES (HERO UNTOUCHED)
+================================ */
 @layer utilities {
   .glass-card {
     @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-lg;
   }
-  
+
   .gradient-primary {
-    @apply bg-gradient-to-r from-primary to-accent;
+    @apply bg-gradient-to-r from-primary to-primary;
   }
-  
-  .gradient-hero {
-    @apply bg-gradient-to-br from-primary via-primary/90 to-accent;
-  }
-  
+
+  /* Line 186: Custom Hero Background */
+.gradient-hero {
+  background-image: linear-gradient(rgba(15, 40, 84, 0.7), rgba(15, 40, 84, 0.8)), 
+                    url('./assets/img/herobg.png') !important;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
   .status-reported {
     @apply bg-info/10 text-info border-info/30;
   }
-  
+
   .status-in-progress {
     @apply bg-warning/10 text-warning border-warning/30;
   }
-  
+
   .status-resolved {
     @apply bg-success/10 text-success border-success/30;
   }
+}
+
+/* ================================
+   MODERN UI STYLING
+================================ */
+@layer components {
+
+  button,
+  .btn {
+    @apply transition-all duration-300;
+    border-radius: 10px;
+  }
+
+  button:hover,
+  .btn:hover {
+    background-image: linear-gradient(135deg, #1C4D8D, #0F2854);
+    color: white;
+    box-shadow: 0 8px 24px rgba(28, 77, 141, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .card,
+  .glass-card,
+  [data-card] {
+    border-radius: 12px;
+  }
+
+  [role="tab"],
+  .tab {
+    @apply transition-all duration-300;
+    border-radius: 10px;
+  }
+
+  [role="tab"]:hover {
+    background: rgba(28, 77, 141, 0.15);
+  }
+
+  input,
+  textarea,
+  select {
+    border-radius: 10px;
+  }
+
+  nav a {
+    border-radius: 10px;
+  }
+}
+
+/* ================================
+   STATUS COLORS
+================================ */
+
+.status-resolved,
+[data-status="resolved"] {
+  color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.4);
+}
+
+.status-in-progress,
+[data-status="in-progress"] {
+  color: #f97316 !important;
+  background-color: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.status-reported,
+[data-status="reported"] {
+  color: #2563eb !important;
+  background-color: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+/* Back button – subtle extra rounding */
+.back-button,
+button.back,
+button[aria-label="Back"],
+a.back {
+  border-radius: 12px !important;
+}
+/* Back, Details & Issue Cards – slightly rounder */
+.back-button,
+button.back,
+button[aria-label="Back"],
+
+.details-button,
+button.details,
+a.details,
+
+.issue-card,
+[data-issue],
+.issue-item {
+  border-radius: 12px !important;
+}
+/* Citizen & Authority login buttons – slightly rounder */
+.citizen-login,
+.authority-login,
+button.citizen,
+button.authority,
+a.citizen,
+a.authority {
+  border-radius: 12px !important;
+}
+/* Slight rounding for all UI (exclude hero) */
+:not(.gradient-hero):not(.gradient-hero *) {
+  border-radius: 10px;
+}
+
+/* Cards a touch more rounded */
+.card,
+.glass-card,
+[data-card] {
+  border-radius: 12px !important;
+}
+
+/* Buttons */
+button,
+.btn {
+  border-radius: 10px !important;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  border-radius: 10px !important;
+}
+
+/* Card elevation & depth */
+.card,
+.glass-card,
+[data-card] {
+  background-color: hsl(var(--card));
+  box-shadow: 0 10px 30px rgba(15, 40, 84, 0.12);
+  border: 1px solid rgba(28, 77, 141, 0.18);
+  transition: all 0.3s ease;
+}
+
+/* Hover lift */
+.card:hover,
+.glass-card:hover,
+[data-card]:hover {
+  box-shadow: 0 18px 40px rgba(15, 40, 84, 0.22);
+  transform: translateY(-4px);
 }
