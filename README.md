@@ -1,65 +1,113 @@
-# Welcome to your CityZen project
+# CityZen 
+*A Smart Civic Engagement Platform*
 
-## Project info
+#URL*
+https://community-connect-three.vercel.app/
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+CityZen is a digital civic engagement platform that bridges the gap between citizens and local authorities.  
+It enables citizens to report local issues easily and allows authorities to resolve them transparently using real-time data and AI-powered insights.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+##Problem Statement
+Lack of effective civic engagement and feedback in local governance leads to unresolved issues, delays, and loss of trust.  
+Citizens often don’t know where to complain or feel their voices are ignored.
 
+---
 
+## Solution
+CityZen provides a simple, transparent platform where:
+- Citizens can report issues with photos and location
+- Authorities receive ward-wise complaints
+- Issues are tracked in real time
+- Proof-based resolution builds accountability
+- AI helps authorities make better decisions
 
-(https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Key Features
 
-**Use your preferred IDE**
+### Citizen Features
+- Secure login (phone/email)
+- Ward/area selection
+- Issue reporting with photo & auto-detected location
+- Live map view of reported issues
+- Upvote existing issues
+- Real-time status tracking  
+  *(Reported → In Progress → Resolved)*
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Authority Features
+- Ward-wise complaint dashboard
+- Status updates with proof upload
+- Real-time complaint monitoring
+- AI-generated ward summaries
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## AI Capabilities
+- Ward-level complaint analysis
+- Issue resolution rate summaries
+- Decision-support insights for authorities
+- Scope for duplicate issue detection and prioritization
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Tech Stack
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
+### Frontend
+- Next.js (React)
 - Tailwind CSS
-(https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- Vite
+- Google Maps API
 
+### Backend
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Cloud Functions
+- Gemini API (Google AI)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Deployment
+- Vercel
+
+---
+
+##Architecture Overview
+- Role-based web application for citizens and authorities
+- Firebase handles authentication and real-time data
+- Cloud Functions manage backend workflows and AI triggers
+- Gemini API processes ward-level analytics
+- Maps API enables location-based visualization
+
+---
+
+## Live Demo
+🔗 **MVP:** https://community-connect-three.vercel.app/
+
+🎥 **Demo Video:**  
+https://drive.google.com/drive/folders/1pncdkq-h42oD-cIIlZZp9VMqM9r4jhJy
+
+---
+
+##GitHub Repository
+🔗 https://github.com/Nithu2912/community-connect
+
+---
+
+## Future Enhancements
+- AI-based duplicate issue detection
+- Multilingual support (regional Indian languages)
+- Automated escalation for delayed issues
+- Integration with official municipal systems
+- Advanced analytics dashboards
+
+---
+
+## Team
+**Team Name:** CityZen  
+**Team Lead:** Nithu Pedsangi  
+
+---
+
+## Conclusion
+CityZen is not just a complaint-reporting tool — it is a transparency-driven civic platform that closes the loop between citizens and governance using technology and AI.
+
